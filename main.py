@@ -25,7 +25,7 @@ def get_conn():
         user=os.getenv("db_user"),
         password=os.getenv("db_password"),
         database=os.getenv("db_name"),
-        port=int(os.getenv("db_port") or 3306)
+        port=os.getenv("db_port") 
     )
 
 # ======================================================
