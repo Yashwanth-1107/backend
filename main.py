@@ -6,11 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
 # ======================================================
-# CORS POLICY (IMPORTANT FOR STREAMLIT / FRONTEND)
+# CORS
 # ======================================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # allow all (you can restrict later)
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -25,14 +25,15 @@ def get_conn():
         user=os.getenv("db_user"),
         password=os.getenv("db_password"),
         database=os.getenv("db_name"),
-        port=os.getenv("db_port") 
+        port=int(os.getenv("db_port") or 3306)
     )
 
 # ======================================================
-# STARTUP - CREATE TABLE
+# CREATE TABLE + SAMPLE DATA ON STARTUP
 # ======================================================
 @app.on_event("startup")
 def startup():
+
     conn = get_conn()
     cursor = conn.cursor()
 
@@ -48,7 +49,22 @@ def startup():
     )
     """)
 
-    conn.commit()
+    # Check if table is empty
+    cursor.execute("SELECT COUNT(*) FROM expense_tracker")
+    count = cursor.fetchone()[0]
+
+    # Insert sample data if empty
+    if count == 0:
+        cursor.execute("""
+        INSERT INTO expense_tracker
+        (expense_title, expense_amount, expense_category, payment_type, expense_created_date, expense_description)
+        VALUES
+        ('Food', 200, 'Food', 'UPI', '2026-01-01', 'Sample Food Expense'),
+        ('Travel', 500, 'Travel', 'Cash', '2026-01-02', 'Bus Ticket'),
+        ('Shopping', 1000, 'Shopping', 'Card', '2026-01-03', 'Clothes')
+        """)
+        conn.commit()
+
     conn.close()
 
 # ======================================================
@@ -92,7 +108,7 @@ def add_expense(payload: dict):
     return {"message": "Expense Added Successfully"}
 
 # ======================================================
-# VIEW ALL
+# VIEW EXPENSES
 # ======================================================
 @app.get("/get_expenses")
 def get_expenses():
@@ -101,7 +117,6 @@ def get_expenses():
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("SELECT * FROM expense_tracker ORDER BY id DESC")
-
     data = cursor.fetchall()
 
     conn.close()
@@ -109,23 +124,7 @@ def get_expenses():
     return {"expenses": data}
 
 # ======================================================
-# SINGLE EXPENSE
-# ======================================================
-@app.get("/get_expense/{id}")
-def get_expense(id: int):
-
-    conn = get_conn()
-    cursor = conn.cursor(dictionary=True)
-
-    cursor.execute("SELECT * FROM expense_tracker WHERE id=%s", (id,))
-    data = cursor.fetchone()
-
-    conn.close()
-
-    return {"expense": data}
-
-# ======================================================
-# UPDATE EXPENSE
+# UPDATE
 # ======================================================
 @app.put("/update_expense/{id}")
 def update_expense(id: int, payload: dict):
@@ -155,10 +154,10 @@ def update_expense(id: int, payload: dict):
     conn.commit()
     conn.close()
 
-    return {"message": "Expense Updated Successfully"}
+    return {"message": "Updated Successfully"}
 
 # ======================================================
-# DELETE EXPENSE
+# DELETE
 # ======================================================
 @app.delete("/delete_expense/{id}")
 def delete_expense(id: int):
@@ -171,7 +170,7 @@ def delete_expense(id: int):
     conn.commit()
     conn.close()
 
-    return {"message": "Expense Deleted Successfully"}
+    return {"message": "Deleted Successfully"}
 
 # ======================================================
 # ANALYSIS
