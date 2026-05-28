@@ -1,3 +1,4 @@
 fastapi
 uvicorn
 mysql-connector_python
+#git remote add origin https://github.com/Yashwanth-1107/backend.git

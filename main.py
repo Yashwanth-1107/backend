@@ -1,20 +1,36 @@
 from fastapi import FastAPI
 import mysql.connector
-
+import os
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# ======================================================
+# CORS POLICY (IMPORTANT FOR STREAMLIT / FRONTEND)
+# ======================================================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # allow all (you can restrict later)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-
+# ======================================================
+# DB CONNECTION
+# ======================================================
 def get_conn():
     return mysql.connector.connect(
-        host="localhost",
-        user="",
-        password="",
-        database="",
-        port="",
+        host=os.getenv("db_host"),
+        user=os.getenv("db_user"),
+        password=os.getenv("db_password"),
+        database=os.getenv("db_name"),
+        port=int(os.getenv("db_port") or 3306)
     )
 
+# ======================================================
+# STARTUP - CREATE TABLE
+# ======================================================
 @app.on_event("startup")
 def startup():
     conn = get_conn()
@@ -35,12 +51,16 @@ def startup():
     conn.commit()
     conn.close()
 
-# ---------------- HOME ----------------
+# ======================================================
+# HOME
+# ======================================================
 @app.get("/")
 def home():
     return {"message": "Expense Tracker API Running"}
 
-# ===================== ADD =====================
+# ======================================================
+# ADD EXPENSE
+# ======================================================
 @app.post("/add_expense")
 def add_expense(payload: dict):
 
@@ -69,9 +89,11 @@ def add_expense(payload: dict):
     conn.commit()
     conn.close()
 
-    return {"message": "Expense Added"}
+    return {"message": "Expense Added Successfully"}
 
-# ===================== VIEW =====================
+# ======================================================
+# VIEW ALL
+# ======================================================
 @app.get("/get_expenses")
 def get_expenses():
 
@@ -86,7 +108,9 @@ def get_expenses():
 
     return {"expenses": data}
 
-# ===================== SINGLE =====================
+# ======================================================
+# SINGLE EXPENSE
+# ======================================================
 @app.get("/get_expense/{id}")
 def get_expense(id: int):
 
@@ -100,7 +124,9 @@ def get_expense(id: int):
 
     return {"expense": data}
 
-# ===================== UPDATE =====================
+# ======================================================
+# UPDATE EXPENSE
+# ======================================================
 @app.put("/update_expense/{id}")
 def update_expense(id: int, payload: dict):
 
@@ -129,9 +155,11 @@ def update_expense(id: int, payload: dict):
     conn.commit()
     conn.close()
 
-    return {"message": "Expense Updated"}
+    return {"message": "Expense Updated Successfully"}
 
-# ===================== DELETE =====================
+# ======================================================
+# DELETE EXPENSE
+# ======================================================
 @app.delete("/delete_expense/{id}")
 def delete_expense(id: int):
 
@@ -143,9 +171,11 @@ def delete_expense(id: int):
     conn.commit()
     conn.close()
 
-    return {"message": "Expense Deleted"}
+    return {"message": "Expense Deleted Successfully"}
 
-# ===================== ANALYSIS =====================
+# ======================================================
+# ANALYSIS
+# ======================================================
 @app.get("/summary")
 def summary():
 
